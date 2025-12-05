@@ -8,7 +8,7 @@ st.set_page_config(
 
 # ===== HEADER WITH LOGOS & TITLE =====
 # Replace "left_logo.png" and "right_logo.png" with your actual image file paths or URLs
-left_col, middle_col, right_col = st.columns([1, 3, 1])
+left_col, middle_col, right_col = st.columns([1, 4, 1])
 
 with left_col:
     st.image("Data files/Uber-logo.png", use_container_width=True)

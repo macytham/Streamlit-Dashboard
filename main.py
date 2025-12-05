@@ -27,6 +27,8 @@ def load_file(data_url):
 
 data = load_file(data_url)
 
+st.write(data)
+
 # Example access:
 switchbacks_df = data.get("Switchbacks")   # Will be None if sheet not found
 

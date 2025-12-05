@@ -11,7 +11,7 @@ st.set_page_config(
 left_col, middle_col, right_col = st.columns([1, 3, 1])
 
 with left_col:
-    st.image("left_logo.png", use_container_width=True)
+    st.image("Data files/Uber-logo.png", use_container_width=True)
 
 with middle_col:
     st.markdown(
@@ -20,7 +20,7 @@ with middle_col:
     )
 
 with right_col:
-    st.image("right_logo.png", use_container_width=True)
+    st.image("Data files/rice-logo.jpg", use_container_width=True)
 
 st.markdown("---")
 

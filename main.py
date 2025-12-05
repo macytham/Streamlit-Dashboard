@@ -1,4 +1,7 @@
 import streamlit as st
+import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
 
 # Page config
 st.set_page_config(
@@ -6,8 +9,29 @@ st.set_page_config(
     layout="wide",
 )
 
+# ======= LOAD DATA =======
+data_url = 'https://docs.google.com/spreadsheets/d/1fTpJACr1Ay6DEIgFxjFZF8LgEPiwwAFY/edit?usp=sharing&ouid=103457517634340619188&rtpof=true&sd=true'
+
+@st.cache_data
+def load_file(data_url):
+    # Convert Google Sheets share link → Excel download link
+    modified_url = data_url.replace('/edit?usp=sharing', '/export?format=xlsx')
+
+    # Load ALL sheets from the Excel file
+    all_sheets = pd.read_excel(modified_url, sheet_name=None)
+
+    data = {}
+    for sheet_name, df in all_sheets.items():
+        data[sheet_name] = df
+    return data
+
+data = load_file(data_url)
+
+# Example access:
+switchbacks_df = data.get("Switchbacks")   # Will be None if sheet not found
+
+
 # ===== HEADER WITH LOGOS & TITLE =====
-# Replace "left_logo.png" and "right_logo.png" with your actual image file paths or URLs
 left_col, middle_col, right_col = st.columns([1, 4, 1])
 
 with left_col:

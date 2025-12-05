@@ -27,8 +27,6 @@ def load_file(data_url):
 
 data = load_file(data_url)
 
-st.write(data)
-
 # Example access:
 switchbacks_df = data.get("Switchbacks")   # Will be None if sheet not found
 
@@ -56,19 +54,25 @@ tab_metadata, tab_dictionary, tab_visuals = st.tabs(
 )
 
 # ===== TAB 1: METADATA =====
+
 with tab_metadata:
     st.subheader("Metadata")
-    st.write("Add high-level information about the case study and dataset here.")
-    st.markdown(
-        """
-        **Example fields you might include:**
-        - Case name: HBR – Uber Case Study  
-        - Data source: *Describe where the data comes from*  
-        - Time period covered: *e.g., 2014–2017*  
-        - Unit of analysis: *e.g., trips, drivers, customers*  
-        - Last updated: *YYYY-MM-DD*  
-        """
-    )
+
+    st.write("Dataset loaded from Google Sheets:")
+    st.write(f"**Sheets found:** {list(data.keys())}")
+
+    # Show preview of Switchbacks sheet
+    if switchbacks_df is not None:
+        st.markdown("### Preview of `Switchbacks` Sheet")
+        st.dataframe(switchbacks_df.head())
+    else:
+        st.warning("Sheet named 'Switchbacks' not found in the Excel file.")
+
+    st.markdown("---")
+
+    # ===== SHOW METADATA FROM COPYRIGHT SHEET =====
+    show_metadata(data)
+
 
 # ===== TAB 2: DATA DICTIONARY =====
 with tab_dictionary:

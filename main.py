@@ -63,7 +63,7 @@ def show_dictionary(data: dict):
     st.dataframe(df, use_container_width=True)
 
 
-# ======= TAB 3 DATA LOADER (WITH SLIDER) =======
+# ======= TAB 3 LEFT COLUMN: DATA TABLE WITH SLIDER =======
 def load_data(data: dict):
     """
     Show the 'Switchbacks' sheet with a row-range slider filter.
@@ -94,6 +94,119 @@ def load_data(data: dict):
 
     st.caption(f"Showing rows {start_row} to {end_row} (total {len(filtered_df)} rows)")
     st.dataframe(filtered_df, use_container_width=True)
+
+
+# ======= TAB 3 MIDDLE COLUMN: TIME SERIES PLOT =======
+def show_time_series(data: dict):
+    df = data.get("Switchbacks")
+
+    if df is None:
+        st.error("No sheet named 'Switchbacks' found in the dataset.")
+        return
+
+    df = df.copy()
+
+    # Ensure period_start is datetime
+    if not pd.api.types.is_datetime64_any_dtype(df["period_start"]):
+        df["period_start"] = pd.to_datetime(df["period_start"], errors="coerce")
+
+    df = df.dropna(subset=["period_start"])
+
+    # Candidate metrics
+    candidate_metrics = ["trips_pool", "trips_express", "rider_cancellations"]
+    available_metrics = [m for m in candidate_metrics if m in df.columns]
+
+    if not available_metrics:
+        st.error("None of the expected metrics columns were found in 'Switchbacks'.")
+        return
+
+    st.markdown("### Time Series of Uber Trips in Boston")
+
+    # Multi-selection filter of metrics to plot
+    selected_metrics = st.multiselect(
+        "Select metrics to plot",
+        options=available_metrics,
+        default=available_metrics,
+    )
+
+    if not selected_metrics:
+        st.warning("Please select at least one metric to plot.")
+        return
+
+    fig = go.Figure()
+
+    for y_column in selected_metrics:
+        fig.add_trace(
+            go.Scatter(
+                x=df["period_start"],
+                y=df[y_column],
+                mode="lines+markers",
+                name=y_column,
+            )
+        )
+
+    fig.update_layout(
+        title="Time Series of Uber Trips in Boston",
+        xaxis_title="Time",
+        yaxis_title="Value",
+        height=500,
+        legend_title="Metric",
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
+
+
+# ======= TAB 3 RIGHT COLUMN: PIE CHART =======
+def pie_chart(data: dict):
+    df = data.get("Switchbacks")
+
+    if df is None:
+        st.error("No sheet named 'Switchbacks' found in the dataset.")
+        return
+
+    df = df.copy()
+
+    # Ensure period_start is datetime
+    if not pd.api.types.is_datetime64_any_dtype(df["period_start"]):
+        df["period_start"] = pd.to_datetime(df["period_start"], errors="coerce")
+
+    df = df.dropna(subset=["period_start"])
+
+    if "total_driver_payout" not in df.columns:
+        st.error("Column 'total_driver_payout' not found in 'Switchbacks'.")
+        return
+
+    st.markdown("### Driver Payout Distribution")
+
+    # Dropdown to select period aggregation
+    period = st.selectbox(
+        "Select period aggregation",
+        options=["week", "month"],
+        index=0,
+    )
+
+    if period == "week":
+        df["label"] = df["period_start"].dt.day_name()
+        title = "Total Driver Payout by Day of Week"
+    else:  # month
+        df["label"] = df["period_start"].dt.month_name()
+        title = "Total Driver Payout by Month"
+
+    # Aggregate payouts by label
+    grouped = (
+        df.groupby("label", as_index=False)["total_driver_payout"]
+        .sum()
+        .sort_values("total_driver_payout", ascending=False)
+    )
+
+    fig = px.pie(
+        grouped,
+        names="label",
+        values="total_driver_payout",
+        title=title,
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
 
 
 # ===== HEADER WITH LOGOS & TITLE =====
@@ -157,25 +270,10 @@ with tab_visuals:
     with col1:
         load_data(data)
 
-    # ---- MIDDLE COLUMN: Example chart 1 ----
+    # ---- MIDDLE COLUMN: TIME SERIES ----
     with col2:
-        st.markdown("##### Example: Trips per Day (dummy data)")
-        trips_per_day = {
-            "Day": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-            "Trips": [120, 135, 150, 160, 200, 250, 220],
-        }
-        st.line_chart(trips_per_day, x="Day", y="Trips")
+        show_time_series(data)
 
-    # ---- RIGHT COLUMN: Example chart 2 ----
+    # ---- RIGHT COLUMN: PIE CHART ----
     with col3:
-        st.markdown("##### Example: Average Fare vs Surge Multiplier (dummy data)")
-        surge_levels = {
-            "Surge Multiplier": [1.0, 1.2, 1.5, 2.0],
-            "Average Fare (USD)": [12, 14, 18, 25],
-        }
-        st.bar_chart(surge_levels, x="Surge Multiplier", y="Average Fare (USD)")
-
-        st.info(
-            "Replace the dummy data above with your actual case study data and "
-            "add more visualisations as needed (e.g., driver utilisation, wait times, etc.)."
-        )
+        pie_chart(data)

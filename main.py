@@ -63,6 +63,39 @@ def show_dictionary(data: dict):
     st.dataframe(df, use_container_width=True)
 
 
+# ======= TAB 3 DATA LOADER (WITH SLIDER) =======
+def load_data(data: dict):
+    """
+    Show the 'Switchbacks' sheet with a row-range slider filter.
+    """
+    df = data.get("Switchbacks")
+
+    if df is None:
+        st.error("No sheet named 'Switchbacks' found in the dataset.")
+        return
+
+    n_rows = len(df)
+    if n_rows == 0:
+        st.warning("The 'Switchbacks' sheet is empty.")
+        return
+
+    st.markdown("### Switchbacks Data")
+
+    # Double int slider for row range
+    start_row, end_row = st.slider(
+        "Select row range (by index)",
+        min_value=0,
+        max_value=n_rows - 1,
+        value=(0, min(50, n_rows - 1)),
+    )
+
+    # Filter dataframe by selected range (inclusive)
+    filtered_df = df.iloc[start_row:end_row + 1]
+
+    st.caption(f"Showing rows {start_row} to {end_row} (total {len(filtered_df)} rows)")
+    st.dataframe(filtered_df, use_container_width=True)
+
+
 # ===== HEADER WITH LOGOS & TITLE =====
 left_col, middle_col, right_col = st.columns([1, 4, 1])
 
@@ -116,26 +149,33 @@ with tab_dictionary:
 # ===== TAB 3: VISUALISATIONS =====
 with tab_visuals:
     st.subheader("Visualisations")
-    st.write("Add charts and key metrics that support the case study analysis.")
 
-    # Example line chart
-    st.markdown("##### Example: Trips per Day (dummy data)")
-    trips_per_day = {
-        "Day": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-        "Trips": [120, 135, 150, 160, 200, 250, 220],
-    }
-    st.line_chart(trips_per_day, x="Day", y="Trips")
+    # Three columns layout
+    col1, col2, col3 = st.columns(3)
 
-    # Example bar chart
-    st.markdown("##### Example: Average Fare vs Surge Multiplier (dummy data)")
-    surge_levels = {
-        "Surge Multiplier": [1.0, 1.2, 1.5, 2.0],
-        "Average Fare (USD)": [12, 14, 18, 25],
-    }
-    st.bar_chart(surge_levels, x="Surge Multiplier", y="Average Fare (USD)")
+    # ---- LEFT COLUMN: TABLE + SLIDER ----
+    with col1:
+        load_data(data)
 
-    st.info(
-        "Replace the dummy data above with your actual case study data and "
-        "add more visualisations as needed (e.g., driver utilisation, wait times, etc.)."
-    )
+    # ---- MIDDLE COLUMN: Example chart 1 ----
+    with col2:
+        st.markdown("##### Example: Trips per Day (dummy data)")
+        trips_per_day = {
+            "Day": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+            "Trips": [120, 135, 150, 160, 200, 250, 220],
+        }
+        st.line_chart(trips_per_day, x="Day", y="Trips")
 
+    # ---- RIGHT COLUMN: Example chart 2 ----
+    with col3:
+        st.markdown("##### Example: Average Fare vs Surge Multiplier (dummy data)")
+        surge_levels = {
+            "Surge Multiplier": [1.0, 1.2, 1.5, 2.0],
+            "Average Fare (USD)": [12, 14, 18, 25],
+        }
+        st.bar_chart(surge_levels, x="Surge Multiplier", y="Average Fare (USD)")
+
+        st.info(
+            "Replace the dummy data above with your actual case study data and "
+            "add more visualisations as needed (e.g., driver utilisation, wait times, etc.)."
+        )

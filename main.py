@@ -10,25 +10,47 @@ st.set_page_config(
 )
 
 # ======= LOAD DATA =======
-data_url = 'https://docs.google.com/spreadsheets/d/1fTpJACr1Ay6DEIgFxjFZF8LgEPiwwAFY/edit?usp=sharing&ouid=103457517634340619188&rtpof=true&sd=true'
+data_url = "https://docs.google.com/spreadsheets/d/1fTpJACr1Ay6DEIgFxjFZF8LgEPiwwAFY/edit?usp=sharing&ouid=103457517634340619188&rtpof=true&sd=true"
+
 
 @st.cache_data
-def load_file(data_url):
-    # Convert Google Sheets share link → Excel download link
-    modified_url = data_url.replace('/edit?usp=sharing', '/export?format=xlsx')
+def load_file(data_url: str) -> dict:
+    """
+    Load all sheets from a Google Sheets link (as Excel) into a dict of DataFrames.
+    Keys = sheet names, values = DataFrames.
+    """
+    # Convert the Google Sheets URL into a direct Excel export link
+    base = data_url.split("/edit")[0]
+    modified_url = base + "/export?format=xlsx"
 
     # Load ALL sheets from the Excel file
     all_sheets = pd.read_excel(modified_url, sheet_name=None)
+    return all_sheets
 
-    data = {}
-    for sheet_name, df in all_sheets.items():
-        data[sheet_name] = df
-    return data
 
 data = load_file(data_url)
 
-# Example access:
-switchbacks_df = data.get("Switchbacks")   # Will be None if sheet not found
+# Example access: sheet named "Switchbacks"
+switchbacks_df = data.get("Switchbacks")  # Will be None if sheet not found
+
+
+def show_metadata(data: dict) -> None:
+    """
+    Show metadata from a sheet named 'Copyright' inside Streamlit.
+    Assumes the sheet contains text in its first column.
+    """
+    df = data.get("Copyright")
+
+    if df is None:
+        st.error("No sheet named 'Copyright' found in the dataset.")
+        return
+
+    # Use first column of non-null rows
+    lines = [row[0] for row in df.dropna().values.tolist()]
+    text = "\n".join(lines)
+
+    st.markdown("### Copyright Information")
+    st.markdown(text)
 
 
 # ===== HEADER WITH LOGOS & TITLE =====
@@ -54,7 +76,6 @@ tab_metadata, tab_dictionary, tab_visuals = st.tabs(
 )
 
 # ===== TAB 1: METADATA =====
-
 with tab_metadata:
     st.subheader("Metadata")
 
@@ -70,9 +91,8 @@ with tab_metadata:
 
     st.markdown("---")
 
-    # ===== SHOW METADATA FROM COPYRIGHT SHEET =====
+    # Show metadata from "Copyright" sheet
     show_metadata(data)
-
 
 # ===== TAB 2: DATA DICTIONARY =====
 with tab_dictionary:
@@ -129,7 +149,6 @@ with tab_visuals:
     st.line_chart(trips_per_day, x="Day", y="Trips")
 
     st.markdown("##### Example: Average Fare vs Surge Multiplier (dummy data)")
-    # Using a simple structure for bar chart
     surge_levels = {
         "Surge Multiplier": [1.0, 1.2, 1.5, 2.0],
         "Average Fare (USD)": [12, 14, 18, 25],

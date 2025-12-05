@@ -15,42 +15,52 @@ data_url = "https://docs.google.com/spreadsheets/d/1fTpJACr1Ay6DEIgFxjFZF8LgEPiw
 
 @st.cache_data
 def load_file(data_url: str) -> dict:
-    """
-    Load all sheets from a Google Sheets link (as Excel) into a dict of DataFrames.
-    Keys = sheet names, values = DataFrames.
-    """
-    # Convert the Google Sheets URL into a direct Excel export link
+    """Load all sheets from a Google Sheets link (as Excel)."""
     base = data_url.split("/edit")[0]
     modified_url = base + "/export?format=xlsx"
-
-    # Load ALL sheets from the Excel file
     all_sheets = pd.read_excel(modified_url, sheet_name=None)
     return all_sheets
 
 
 data = load_file(data_url)
 
-# Example access: sheet named "Switchbacks"
-switchbacks_df = data.get("Switchbacks")  # Will be None if sheet not found
+# Example: Switchbacks sheet
+switchbacks_df = data.get("Switchbacks")
 
 
-def show_metadata(data: dict) -> None:
-    """
-    Show metadata from a sheet named 'Copyright' inside Streamlit.
-    Assumes the sheet contains text in its first column.
-    """
+# ======= METADATA FUNCTION =======
+def show_metadata(data: dict):
     df = data.get("Copyright")
 
     if df is None:
         st.error("No sheet named 'Copyright' found in the dataset.")
         return
 
-    # Use first column of non-null rows
     lines = [row[0] for row in df.dropna().values.tolist()]
     text = "\n".join(lines)
 
     st.markdown("### Copyright Information")
     st.markdown(text)
+
+
+# ======= DATA DICTIONARY FUNCTION =======
+def show_dictionary(data: dict):
+    if "Data Dictionary" not in data:
+        st.error("No sheet named 'Data Dictionary' found.")
+        return
+
+    df_raw = data["Data Dictionary"]
+
+    # Extract headers from row 1 (second row)
+    headers = df_raw.iloc[1, :].values.tolist()
+
+    # Actual dictionary rows start at row 2 (third row)
+    df = df_raw.iloc[2:, :].copy()
+    df.columns = headers
+    df.reset_index(drop=True, inplace=True)
+
+    st.markdown("### Data Dictionary")
+    st.dataframe(df, use_container_width=True)
 
 
 # ===== HEADER WITH LOGOS & TITLE =====
@@ -91,56 +101,24 @@ with tab_metadata:
 
     st.markdown("---")
 
-    # Show metadata from "Copyright" sheet
+    # Show metadata text
     show_metadata(data)
+
 
 # ===== TAB 2: DATA DICTIONARY =====
 with tab_dictionary:
-    st.subheader("Data Dictionary")
-    st.write("Describe each variable/column used in the analysis.")
+    st.subheader("Data Dictionary Overview")
+    st.write("Below is the automatically extracted data dictionary from your Google Sheet:")
 
-    # Example data dictionary using only Streamlit (simple table)
-    data_dict = {
-        "Variable": [
-            "trip_id",
-            "driver_id",
-            "customer_id",
-            "request_datetime",
-            "pickup_location",
-            "dropoff_location",
-            "fare_amount",
-            "surge_multiplier",
-        ],
-        "Type": [
-            "string",
-            "string",
-            "string",
-            "datetime",
-            "string",
-            "string",
-            "float",
-            "float",
-        ],
-        "Description": [
-            "Unique identifier for each trip",
-            "Unique identifier for driver",
-            "Unique identifier for customer",
-            "Datetime when the ride was requested",
-            "Pickup zone or coordinates",
-            "Dropoff zone or coordinates",
-            "Total fare charged to customer",
-            "Multiplier applied during peak demand",
-        ],
-    }
+    show_dictionary(data)
 
-    # Streamlit can render a simple table directly from dict
-    st.table(data_dict)
 
 # ===== TAB 3: VISUALISATIONS =====
 with tab_visuals:
     st.subheader("Visualisations")
     st.write("Add charts and key metrics that support the case study analysis.")
 
+    # Example line chart
     st.markdown("##### Example: Trips per Day (dummy data)")
     trips_per_day = {
         "Day": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
@@ -148,14 +126,5 @@ with tab_visuals:
     }
     st.line_chart(trips_per_day, x="Day", y="Trips")
 
-    st.markdown("##### Example: Average Fare vs Surge Multiplier (dummy data)")
-    surge_levels = {
-        "Surge Multiplier": [1.0, 1.2, 1.5, 2.0],
-        "Average Fare (USD)": [12, 14, 18, 25],
-    }
-    st.bar_chart(surge_levels, x="Surge Multiplier", y="Average Fare (USD)")
-
-    st.info(
-        "Replace the dummy data above with your actual case study data and "
-        "add more visualisations as needed (e.g., driver utilisation, wait times, etc.)."
-    )
+    # Example bar chart
+    st.markdown("##
